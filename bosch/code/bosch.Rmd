@@ -1,0 +1,82 @@
+rm(list = ls())
+
+   
+
+```{r}
+library(data.table)
+library(digest)
+library(FeatureHashing)
+library(Matrix)
+```
+
+This script: reads the categorical data column-wise in 5 batches; stores a digest hash of each column; compares the digests to identify duplicates; re-reads only those columns that aren't duplicates (about 10%).
+
+### 1) Setup read parameters and lists to store outputs
+
+With 5 batches, the RAM requirement should be less than 6GB
+
+```{r}
+setwd("/Users/davidmonteagudo/kaggle/data/bosch/input/")
+
+n_batch  <- 5
+col_idx  <- c(1:2141)
+col_bat  <- cut(col_idx, n_batch, labels = c(1:n_batch))
+
+all_features <- vector("list", n_batch)
+all_digests  <- vector("list", n_batch)
+
+read <- function(select) fread("../input/train_categorical.csv",
+colClasses = "character",
+na.strings = "",
+showProgress = F,
+select = select)
+```
+
+### 2) Loop through each batch (most time spent reading)
+
+Only the feature names and digests of each feature are stored.
+
+```{r}
+for(i in seq_along(all_features)) {
+
+print(i)
+
+dt <- read(select = col_idx[col_bat == i])
+
+all_features[[i]] <- names(dt)
+all_digests[[i]]  <- lapply(dt, digest)
+
+rm(dt)
+}
+```
+
+### 3) Check summary of feature names and digests
+
+Appears to be over 1,900 duplicates, including empty columns.
+
+```{r}
+feature_summary <- data.table(feature = unlist(all_features),
+digest  = unlist(all_digests))
+
+feature_summary$duplicate <- duplicated(feature_summary$digest)
+
+sum(feature_summary$duplicate)
+
+head(feature_summary, 30)
+```
+
+### 4) Re-read non-duplicates and check properties
+
+Once hashed to sparse, only c600 dummy columns needed.
+
+```{r}
+not_dupes <- feature_summary$feature[!feature_summary$duplicate]
+
+dt <- read(select = not_dupes)
+X  <- hashed.model.matrix( ~ . -Id -1, data = dt)
+
+dim(X)
+sum(rowSums(X) != 0)
+sum(colSums(X) != 0)
+summary(colSums(X)[colSums(X) > 0])
+```

@@ -1,0 +1,196 @@
+---
+title: "EDA with Plotly"
+author: "Pradeep Adhokshaja"
+date: "3 September 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reading Libraries
+
+We load the libraries we need for this project
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(data.table)
+library(formattable)
+
+```
+
+## Reading the data.
+
+What are the variables? What are its dimensions?
+
+```{r }
+setwd("/Users/davidmonteagudo/kaggle/data/imdb/input/")
+
+movie <- read.csv('../input/movie_metadata.csv',header=T,stringsAsFactors = F)
+str(movie)
+dim(movie)
+
+```
+
+We see that the data is made of 5043 rows with 28 columns. Lets see what we can understand from
+this data. For this, we ask a few questions.
+
+##What are the total number of movies reviewed by year?
+
+Lets see the trend.
+
+```{r}
+movie_year <- movie %>% select(movie_title,title_year)
+group_movie_year <- movie_year %>% group_by(title_year) %>% summarise(n=n())
+
+which(is.na(group_movie_year$title_year))
+
+        
+group_movie_year <- na.omit(group_movie_year)
+p <- plot_ly(group_movie_year, x = title_year, y = n, name = "Number of Movies by Year")
+p %>%
+  add_trace(y = fitted(loess(n ~ as.numeric(title_year))), x = title_year) %>%
+  layout(title = "Year and Movies", showlegend = FALSE) %>%
+  dplyr::filter(n == max(n)) %>%
+  layout(annotations = list(x = title_year, y = n, text = "Peak", showarrow = T))
+```
+
+We see the highest number of movies were in the year 2009, with the number of movies being 260
+The trend seems to be exponential. The number of movies reviewed seems to be 160 in 2016.
+
+## What is the average IMDB rating by year?
+
+What is the average quality of movies released each year.
+
+```{r}
+temp <- movie %>% select(imdb_score,title_year)
+temp <- temp %>% group_by(title_year)%>% summarise(score=mean(imdb_score))
+temp <- na.omit(temp)
+p <- plot_ly(temp, x = title_year, y = score, name = "Avg Score by Year")
+p %>%
+  add_trace(y = fitted(loess(score ~ as.numeric(title_year))), x = title_year) %>%
+  layout(title = "Year and Score",
+         showlegend = FALSE) %>%
+  dplyr::filter(score == max(score)) %>%
+  layout(annotations = list(x = title_year, y = score, text = "Peak", showarrow = T))
+
+```
+
+The overall trend of average score seems to be declining. The highest average score is achieved
+by the year 1957. The lowest being achieved in 1920. As years pass by , the trend keeps decreasing.This is a question of quality vs quantity.Average scores seem to be constant in the years 1925 to 1929.
+
+## How do the average score change for each type of content rating?
+
+Are content ratings tied to IMDB scores?
+
+```{r}
+temp <- movie %>% select(content_rating,imdb_score)
+temp <- temp %>% group_by(content_rating)%>% summarise(score = mean(imdb_score))
+p <- plot_ly(
+  x = temp$content_rating,
+  y = temp$score,
+  name = "Avg score by Rating",
+  type = "bar")
+p
+```
+
+We see that the highest average score seems to be bagged by TV-MA category. This is not
+enough. How do these scores vary by category?
+
+```{r}
+temp <- movie %>% select(imdb_score,content_rating)
+temp <- na.omit(temp)
+plot_ly(temp, x = imdb_score, color = content_rating, type = "box")
+```
+
+We see that the IQR of each distribution is above 5. The highest imdb_scores tend to be of 
+the TV-MA content rating type. The R rated category has the largest number of outliers that range from a score of 1.9 to 4.2.
+
+## Which director has the highest average IMBD rating? Lets display the top twenty directors.
+
+```{r}
+temp <- movie %>% select(director_name,imdb_score)
+temp <- temp %>% group_by(director_name) %>% summarise(avg=mean(imdb_score))
+temp <- temp %>% arrange(desc(avg))
+temp <- temp[1:20,]
+temp %>%
+  formattable(list(avg = color_bar("orange")), align = 'l')
+```
+
+## Are the number of facebook likes an indicator of the imdb_score? Lets check it out!
+
+```{r}
+temp <- movie %>% select(movie_facebook_likes,imdb_score,content_rating)
+plot_ly(temp, x = movie_facebook_likes, y = imdb_score,
+        color =content_rating , mode = "markers",text=paste('Content:',content_rating))
+```
+ 
+We divide this scatter plot by content-rating. We do not see any trend here. There seem to 
+be movies that have high IMDB scores but low Facebook likes.
+
+## How are the likes of the total cast related to budget? Do producers spend more on popular  actors?
+
+```{r}
+temp <- movie %>% select(cast_total_facebook_likes,budget,movie_title,content_rating)
+plot_ly(temp, x = cast_total_facebook_likes, y = budget,
+        color =content_rating , mode = "markers",text=paste('Movie:',movie_title))
+```
+
+Oops!We cant see much here in the plot. We try to reduce our data space by removing outliers.
+
+```{r}
+qnt <- quantile(temp$budget, probs=c(.25, .75), na.rm = T)
+H <- 1.5 * IQR(temp$budget, na.rm =T)
+
+temp$budget <- ifelse(temp$budget<(qnt[1]-H),NA,temp$budget)
+temp$budget <- ifelse(temp$budget>(qnt[2]+H),NA,temp$budget)
+temp <- na.omit(temp)
+plot_ly(temp, x = cast_total_facebook_likes, y = budget,
+        color =content_rating , mode = "markers",text=paste('Movie:',movie_title))
+```
+
+We do not see much here either. The Legend of Ron Burgundy has the highest number of cast
+Facebook likes with a budget of just 26M!The Gladiator on the other hand has 6521 cast likes with a budget of 103M!
+
+## Is the number of likes for a director tied to the IMDB score?
+
+```{r}
+temp <- movie %>% select(director_facebook_likes,imdb_score,content_rating,movie_title)
+
+plot_ly(temp, x = director_facebook_likes, y = imdb_score,
+        color =content_rating , mode = "markers",text=paste('Movie:',movie_title))
+```
+
+As we  see this is not true. There are directors with high IMDB scores with low Facebook likes
+Upon scrolling over, we find that the movie Towering Inferno has an IMDB score of 9.5 with
+director likes of 0. 
+
+## What are the number of films that have grossed less than their budgets by year?
+
+```{r}
+temp <- movie %>% select(gross, budget,title_year)
+temp$diff <- temp$gross - temp$budget
+temp <- na.omit(temp)
+temp$profit <- rep('',dim(temp)[1])
+temp$profit <- ifelse(temp$diff<0,'No','Yes')
+temp <- temp %>% group_by(title_year) %>% summarise(n=sum(profit=='No'))
+p <- plot_ly(temp, x = title_year, y = n, name = "Number of low grossing movies by Year")
+p %>%
+  add_trace(y = fitted(loess(n ~ as.numeric(title_year))), x = title_year) %>%
+  layout(title = "Year and Low Gross",
+         showlegend = FALSE) %>%
+  dplyr::filter(n == max(n)) %>%
+  layout(annotations = list(x = title_year, y = n, text = "Peak", showarrow = T))
+```
+
+We see the year with the largest number of low grossing movies was 2004 with a value of 104.
+The trend seems to be increasing with a lot of indie films coming into the picture.
+
+There are many ways we could look at this data. I would love to see you guys come up with
+better insights.
+
+Thank You for reading. The materials for plotly can be found at https://plot.ly/r/user-guide/
