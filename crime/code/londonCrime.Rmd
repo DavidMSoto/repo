@@ -1,0 +1,89 @@
+---
+title: "londonCrime"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Crime
+
+
+
+```{r }
+# install.packages("ff")
+rm(list = ls())
+
+setwd("~/dataScience/projects/repo/crime/code/")
+
+ london = read.csv("../input/allyearsLondon.csv")
+london = read.csv("../input/allyearsLondon.csv", header=T, sep=",", stringsAsFactors=F) 
+ summary(london)
+ london$Crime.ID <- NULL
+ 
+unique(london$Month)
+
+london_2015 = filter(london, london$Month >= 2016-01)
+
+london_2015 = na.omit(london_2015)
+
+ 
+london$Longitude = as.numeric(london$Longitude)
+london$Latitude = as.numeric(london$Latitude)
+ 
+
+# remove some junk data
+london_2015<-london_2015[-which(london_2015$Month=="Month"), ] 
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+
+london_2016 = filter(london, london$Month >= 2016-01)
+
+cc       <- strsplit(london$Month,'-')
+london_2016$year    <- unlist(cc)[2*(1:length(london_2016$Month))-1]
+london_2016$month     <- unlist(cc)[2*(1:length(london_2016$Month))  ]
+
+unique(london_2016$year)
+unique(london$Month)
+
+ london$Month <- NULL
+
+
+t_2006_to_2015$Occurrence.Month = factor(t_2006_to_2015$Occurrence.Month, 
+                                  levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
+
+```
+
+
+
+```{r, tidy=T}
+t_total_count_by_year_and_offense = tb %>%
+  group_by(Occurrence.Year, Offense) %>% summarise(count=n())
+
+ggplot(data=t_total_count_by_year_and_offense, aes(x=as.numeric(Occurrence.Year), y=count)) +
+  ggtitle("Number of offense insidents over the last 10 years (2006-2015)") +
+  xlab("Year from 2006 to 2015") +
+  ylab("Number of incidents") + 
+  geom_point(aes(color=Offense), size=5.0) + 
+  geom_line(aes(color=Offense), size=2.0)
+```
+
+We can learn from the figure that: 
+
+* Grand larceny is the most frequent offense out of 7. The number of indidents caused by grand larceny went down in 2015.
+
+* There is no clear trend showing felony assult is decling.
+
+* The number of all the rest offenses are declining.
+
+Overall, NYC is becoming safer than before.
+

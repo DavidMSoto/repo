@@ -12,8 +12,8 @@ library(PerformanceAnalytics)
 library(MASS)
 library(glmnet)
 # ===============================================================================================
-setwd("/Users/davidmonteagudo/kaggle/data/imdb/input/")
-movies = read.csv("movie_metadata.csv")
+setwd("~/kaggle/data/imdb/code/")
+movies = read.csv("../input/movie_metadata.csv")
 
 
 # ===============================================================================================
