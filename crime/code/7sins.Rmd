@@ -43,6 +43,7 @@ The dataset is 194M in size, and contains around 1.2 million rows with 22 variab
 # install.packages("ff")
 library(ff)
 library(dplyr)
+rm(list = ls())
 
 setwd("~/dataScience/projects/repo/crime/code/")
 

@@ -46,13 +46,16 @@ crimes$monthy = factor(crimes$monthy, levels=c("Jan", "Feb", "Mar", "Apr", "May"
                                                   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
 class(crimes$monthy)
 
+### Analysis by year
 
-t_total_count_by_year_and_offense = crimes %>%
-  group_by(year, Crimetype) %>% summarise(count=n())
+```{r, tidy=T}
+t_total_count_by_year_and_offense = tb %>%
+  group_by(Occurrence.Year, Offense) %>% summarise(count=n())
 
-ggplot(data=t_total_count_by_year_and_offense, aes(x=as.numeric(year), y=count)) +
+ggplot(data=t_total_count_by_year_and_offense, aes(x=as.numeric(Occurrence.Year), y=count)) +
   ggtitle("Number of offense insidents over the last 10 years (2006-2015)") +
   xlab("Year from 2006 to 2015") +
   ylab("Number of incidents") + 
-  geom_point(aes(color=Crimetype), size=5.0) + 
-  geom_line(aes(color=Crimetype), size=2.0)
+  geom_point(aes(color=Offense), size=5.0) + 
+  geom_line(aes(color=Offense), size=2.0)
+```

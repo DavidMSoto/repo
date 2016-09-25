@@ -22,6 +22,10 @@ require(cowplot)
 And run below to see the detailed information about variables.
 
 ```{r, tidy=T}
+rm(list = ls())
+
+setwd("~/dataScience/projects/repo/crime/code/")
+
  tb = read.csv("../input/NYPD_7_FELONIES_2006_2015.csv", header=T, sep=",", stringsAsFactors=F)
 tb = t_2006_to_2015
 str(tb)
@@ -131,23 +135,6 @@ ggplot(data=tb, aes(x=Occurrence.Hour)) + geom_histogram(aes(fill=Offense), binw
 ```
 
 
-It shows that:
-
-* Burgalary happens most often during 7am - 8am, and least often on 5am.
-
-* Feloney assult occurrs most often during middle night, and least often during 5am-6am.
-
-* Grand larceny occurs most often at 12pm - 3pm, and least often on 5am.
-
-* Larceny of motor vehicle occurs most often at middle night, and least often on 5am.
-
-* Rape occurs most often at middle night, and least often in the morning.
-
-* Robbery occurs most often in the afternoon, especially at 3pm, and least often at 7am
-
-* Murder occurs most often at 11pm and 3am, and least often at 8am.
-
-
 
 
 ## Analysis of the Where
@@ -197,9 +184,9 @@ I provide an interactive map for better visualization.
 ```{r, tidy=T}
 t_MANHATTAN_2015 = tb %>% filter(Borough=="MANHATTAN", Occurrence.Year=="2015")
 
-leaflet(tb, height=300, width=900) %>%
+leaflet(t_MANHATTAN_2015, height=300, width=900) %>%
   addTiles() %>%  # Add default OpenStreetMap map tiles
-  addMarkers(lng=t_MANHATTAN_2015$loc_y, lat=t_MANHATTAN_2015$loc_x,
+  addMarkers(lng=tb$lon, lat=tb$lat,
              clusterOptions = markerClusterOptions())
 
 ```
@@ -264,37 +251,3 @@ t_staten_island = tb %>%
 draw_density_map_of_offenses_for_borough(area_map_obj, t_staten_island)
 ```
 
-
-# Insights
-Now the answers of the proposed questions are as follows.
-
-**Q1. Is NYC becoming a safer city over the last 10 years?**
-
-Anser: Yes. New York City is becoming safer than before.
-
-**Q2. Which months in one year can be considered as unsafe?**
-
-Answer: All 7 felony offenses occur on all months of a year, but it seems that April and August are the two least "unsafe" months.
-
-**Q3. Which days in a week can be considered as unsafe?**
-
-Answer: Oveall, Friday is the unsafest weekday since 5 out 7 felonies occur most often on Friday. On weekend, felony assult and murder occur more often than other felonies. 
-
-**Q4. Which hours in a day can be considered as "unsafe"?**
-
-Answer: Depending on the felony type, many hours within a day are unsafe. 
-
-* In the Morning (7am - 10am), burglary and grand larceny occur more often than other felonies. 
-
-* In the afternoon (1pm - 3pm), grand larceny and robbery occur more often. 
-
-* In the evening (7pm - 10pm), felony assult, robbery, and murder occur more often.
-
-* In middle night (11pm - 3am), larceny of motor vehicle, felony assult, rape, robbery, murder occurs more often.
-
-Fortunately, 5am seems to be the only hour within a day that is the least unsafe.
-
-
-**Q5. According to historical data, which borough are more unsafe than others?**
-
-Answer: Brooklyn

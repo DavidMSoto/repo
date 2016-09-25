@@ -1,0 +1,119 @@
+---
+title: "LondonCrimeV3"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+rm(list = ls())
+
+setwd("~/dataScience/projects/repo/crime/code/")
+
+outcomes = read.csv("../input/outcomes20152016.csv", header=T, sep=",", stringsAsFactors=F) 
+street = read.csv("../input/street20152016.csv", header=T, sep=",", stringsAsFactors=F) 
+
+names(street)
+names(outcomes)
+
+
+names(street) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
+ "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
+ "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory", "Context" )
+
+names(outcomes)<-c( "CrimeID"  ,   "Month"     ,   "ReportedBy"  ,"FallsWithin" ,"Longitude" ,   "Latitude" ,  
+                   "Location"  ,   "LSOACode"   , "LSOAName"   , "OutcomeType"  )    
+
+tail(street)
+
+
+#data <- merge(x = outcomes, y = street, by = "Crime.ID", all = TRUE)
+
+library(sqldf)
+crimes <-  sqldf("SELECT 
+          --count(*)
+          s.Month ,s.Crimetype ,s.Lastoutcomecategory, o.Longitude, o.Latitude 
+             FROM street s, outcomes o
+             where s.CrimeID = o.CrimeID 
+            and s.rowid <= 2000
+      --   and s.Crimetype like '%sexual%'
+          " )
+
+
+
+```
+
+## feature enginering - do not run
+
+```{r pressure, echo=FALSE}
+crimes<-crimes[-which(crimes$Month=="Month"), ] 
+
+
+ crimes[!complete.cases(crimes),]
+ crimes <- na.omit(crimes) 
+library(tidyr)
+# specify the new column names:
+vars <- c("year", "monthy")
+crimes <- separate(crimes, Month, into = vars, sep = "-")
+
+# not run from here
+
+
+crimes$monthy<- as.factor(crimes$monthy )
+
+crimes = as.data.frame(crimes)
+
+crimes$monthy = factor(crimes$monthy, levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
+class(crimes$monthy)
+```
+
+### Analysis by monthy
+
+```{r, tidy=T}
+by_year_and_crime = crimes %>%
+  group_by(monthy, Crimetype) %>% summarise(count=n())
+
+ggplot(data=by_year_and_crime, aes(x=as.numeric(monthy), y=count)) +
+  ggtitle("Number of offense insidents over the last 10 years (2006-2015)") +
+  xlab("Year from 2006 to 2015") +
+  ylab("Number of incidents") + 
+  geom_point(aes(color=Crimetype), size=5.0) + 
+  geom_line(aes(color=Crimetype), size=2.0)
+
+unique(crimes$monthy)
+
+```
+
+## Analysis of the Where
+
+i dont have any Borough ? - i can inferir them
+
+```{r, tidy=T}
+ggplot(data=(crimes %>% filter(year==2015)), aes(x = Crimetype)) + 
+  geom_bar(aes(fill = Crimetype)) + 
+  ggtitle("The histogram of offense insidents by borough") +
+  xlab("Crimetype") +
+  ylab("Number of Crimes") + 
+  theme(legend.position = "bottom") + 
+  scale_x_discrete(labels=c("Bu", "FA", "GL", "GM", "RP", "RO", "M")) +
+  facet_wrap(~Borough, nrow=1)
+```
+
+
+### Interative map
+Now we analysis the offense by borough in 2015. Since we will use the library "ggmap" to visualize map, we need to first add two columns: 'lon' and 'lat':
+```{r, tidy=T}
+library(leaflet)
+
+crimes = crimes %>% mutate(lon=Longitude, lat=Latitude);
+
+```
+
+
+```{r, tidy=T}
+#t_MANHATTAN_2015 = tb %>% filter(Borough=="MANHATTAN", Occurrence.Year=="2015")
+leaflet(crimes, height=300, width=900) %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addMarkers(lng=crimes$lat, lat=crimes$lon,
+             clusterOptions = markerClusterOptions())
+
+```
