@@ -13,22 +13,7 @@ output:
 ---
 
 
-# Questions
 
-> One man's wilderness is another man's theme park.
->                                 —— Author unknown
-
- following questions:
-
-1. Is NYC becoming a safer city over the last 10 years?
-
-2. Which months in one year can be considered as unsafe?
-
-3. Which days in a week can be considered as unsafe?
-
-4. Which hours in a day can be considered as unsafe?
-
-5. Which places are more unsafe than others?
 
 
 # Dataset

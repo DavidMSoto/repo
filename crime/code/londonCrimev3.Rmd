@@ -6,6 +6,8 @@ output: html_document
 ```{r setup, include=FALSE}
 rm(list = ls())
 
+
+
 setwd("~/dataScience/projects/repo/crime/code/")
 
 outcomes = read.csv("../input/outcomes20152016.csv", header=T, sep=",", stringsAsFactors=F) 
@@ -24,64 +26,80 @@ names(outcomes)<-c( "CrimeID"  ,   "Month"     ,   "ReportedBy"  ,"FallsWithin" 
 
 tail(street)
 
+```
+
+```{r setup, include=FALSE}
+
 
 #data <- merge(x = outcomes, y = street, by = "Crime.ID", all = TRUE)
 
 library(sqldf)
 crimes <-  sqldf("SELECT 
-          --count(*)
+         -- count(*)
           s.Month ,s.Crimetype ,s.Lastoutcomecategory, o.Longitude, o.Latitude 
              FROM street s, outcomes o
              where s.CrimeID = o.CrimeID 
-            and s.rowid <= 2000
+             and  s.Month like '2015%'
+            and o.Longitude!=''
+         --   and s.rowid <= 20
       --   and s.Crimetype like '%sexual%'
           " )
 
-
+crimes<-crimes[-which(crimes$Month=="Month"), ] 
+crimes<-crimes[-which(crimes$Longitude==""), ] 
 
 ```
 
-## feature enginering - do not run
+## feature enginering - juas 
 
 ```{r pressure, echo=FALSE}
-crimes<-crimes[-which(crimes$Month=="Month"), ] 
+#library(tidyr)
 
-
- crimes[!complete.cases(crimes),]
- crimes <- na.omit(crimes) 
-library(tidyr)
 # specify the new column names:
-vars <- c("year", "monthy")
+vars <- c("year", "month")
 crimes <- separate(crimes, Month, into = vars, sep = "-")
 
-# not run from here
+with(crimes, month.abb[as.integer(crimes$month)])
 
+crimes <- transform(crimes, MonthAbb = month.abb[as.integer(crimes$month)])
+#df <- mutate(month = month.abb[month])
+crimes$Occurrence.Month = factor(crimes$MonthAbb, 
+                                  levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
 
-crimes$monthy<- as.factor(crimes$monthy )
-
-crimes = as.data.frame(crimes)
-
-crimes$monthy = factor(crimes$monthy, levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
-class(crimes$monthy)
 ```
 
 ### Analysis by monthy
 
 ```{r, tidy=T}
 by_year_and_crime = crimes %>%
-  group_by(monthy, Crimetype) %>% summarise(count=n())
+  group_by(MonthAbb, Crimetype) %>% summarise(count=n())
 
-ggplot(data=by_year_and_crime, aes(x=as.numeric(monthy), y=count)) +
-  ggtitle("Number of offense insidents over the last 10 years (2006-2015)") +
-  xlab("Year from 2006 to 2015") +
+ggplot(data=by_year_and_crime, aes(x=MonthAbb, y=count)) +
+  ggtitle("Number of offense insidents 2015") +
+  xlab("Year  2015") +
   ylab("Number of incidents") + 
   geom_point(aes(color=Crimetype), size=5.0) + 
   geom_line(aes(color=Crimetype), size=2.0)
 
-unique(crimes$monthy)
 
 ```
+
+### Analysis by month
+
+Now let us see how does the offense incidents distribute across 12 months.
+
+```{r, tidy=T}
+ggplot(data=crimes, aes(x=MonthAbb, color=Crimetype)) + 
+  geom_bar(aes(fill = Crimetype)) + 
+  ggtitle("Number of offense insidents across 12 months") +
+  xlab("Month (from January to December") +
+  ylab("Number of incidents") + 
+  theme(legend.position = "bottom") + 
+  scale_x_discrete(labels=c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12)) +
+  facet_wrap(~Crimetype, nrow=2)
+```
+
 
 ## Analysis of the Where
 
@@ -104,16 +122,7 @@ Now we analysis the offense by borough in 2015. Since we will use the library "g
 ```{r, tidy=T}
 library(leaflet)
 
-crimes = crimes %>% mutate(lon=Longitude, lat=Latitude);
+crimes = crimes %>% mutate(lon=Longitude, lat=Latitude)
 
 ```
 
-
-```{r, tidy=T}
-#t_MANHATTAN_2015 = tb %>% filter(Borough=="MANHATTAN", Occurrence.Year=="2015")
-leaflet(crimes, height=300, width=900) %>%
-  addTiles() %>%  # Add default OpenStreetMap map tiles
-  addMarkers(lng=crimes$lat, lat=crimes$lon,
-             clusterOptions = markerClusterOptions())
-
-```

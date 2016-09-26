@@ -1,0 +1,121 @@
+---
+title: "othersLondonCrime"
+output: html_document
+
+---
+
+Before being a Data Scientist, I remind you to:
+
+    Learn to tell stories ("storytelling")
+    Learn to communicate to non-technical people (they don't care about your "xgboost with 1,000,000 interactions and 10,000 trees giving 0.99328 AUC that took days to compute" when the model of your friend is a "linear regression giving 0.987 AUC with coefficients applied to 3 features in 15 seconds")
+    Learn to teach/train (because you need to learn to communicate properly)
+    Learn to be a creative person / designer (someone who can bissociate stuff [merge two different stuff] and also incorporate sociocultural elements in a project, product, process...)
+    Learn to take vacations =)
+
+
+```{r read, include=FALSE}
+
+rm(list = ls())
+library(data.table)
+library(dplyr)
+library(Matrix)
+
+
+WIN <- FALSE
+
+if (WIN) {setwd("~//R//Rossmann")} else{setwd("~/dataScience/projects/repo/crime/code/")}
+
+
+e=fread('../input/everything.csv', header=T, sep=",", stringsAsFactors=F) 
+e$Context<-NULL #unnecessary duplicate to char_2
+
+p_logi <- names(e)[which(sapply(e, is.logical))]
+for (col in p_logi) set(e, j = col, value = as.numeric(e[[col]]))
+showmap(e)
+
+c=fread('../input/2016-07/2016-07-bedfordshire-street.csv') %>% as.data.frame()
+c$Context<-NULL #unnecessary duplicate to char_2
+
+p_logi <- names(c)[which(sapply(c, is.logical))]
+for (col in p_logi) set(c, j = col, value = as.numeric(c[[col]]))
+
+
+
+system('ls -lh ./../input/2016-07/' )
+
+metropolitan = read.csv("../input/2016-07/2016-07-metropolitan-street.csv", header=T, sep=",", stringsAsFactors=F) 
+
+
+bedfordshire = read.csv("../input/2016-07/2016-07-bedfordshire-street.csv", header=T, sep=",", stringsAsFactors=F) 
+
+ total <- merge( metropolitan,  bedfordshire, by="Crime.ID")
+
+str(bedfordshire)
+
+df = read.csv("../input/everything.csv", header=T, sep=",", stringsAsFactors=F) 
+
+
+
+df <- unique( df[ , 1:11 ] )
+
+metropolitan$Context<-NULL
+df <- as.data.frame(df)
+
+row.has.na <- apply(metropolitan, 1, function(x){any(is.na(x))})
+sum(row.has.na)
+hasempty<-metropolitan[row.has.na,]
+metropolitanclean <- metropolitan[!row.has.na,]
+
+df<-df[-which(df$Longitude==""), ] 
+df<-df[-which(df$Crime.ID==""), ] 
+
+names(df)
+
+crimes <- subset(df, Crime.type =='Violence and sexual offences',
+select=c(Month, Longitude,Latitude,LSOA.code,LSOA.name,Crime.type)) 
+
+showmap(metropolitan)
+```
+
+## Analisys
+
+You can also embed plots, for example:
+
+
+```{#anaysis}
+
+
+
+
+showmap(c)
+showgrap()
+```
+
+
+
+```{fuctions}
+showgrap = function(temp) {
+temp <- movie %>% select(movie_title,title_year)
+temp <- temp %>% group_by(title_year) %>% summarise(n=n())
+temp <- na.omit(temp)
+p <- plot_ly(temp, x = title_year, y = n, name = "Number of Movies by Year")
+p %>%
+  add_trace(y = fitted(loess(n ~ as.numeric(title_year))), x = title_year) %>%
+  layout(title = "Year and Crimes",
+         showlegend = FALSE) %>%
+  dplyr::filter(n == max(n)) %>%
+  layout(annotations = list(x = title_year, y = n, text = "Peak", showarrow = T))
+}
+
+showmap = function(dataset) {
+  library(leaflet)
+  
+  m <- leaflet() %>%
+    addTiles() %>%  # Add default OpenStreetMap map tiles
+    addMarkers(lng=dataset$Longitude, lat=dataset$Latitude,
+               popup=dataset$Crime.type,
+               clusterOptions = markerClusterOptions())
+  m  # Print the map
+}
+```
+
