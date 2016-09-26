@@ -17,95 +17,123 @@ Before being a Data Scientist, I remind you to:
 
 rm(list = ls())
 library(data.table)
-library(dplyr)
 library(Matrix)
-
-
-WIN <- FALSE
-
-if (WIN) {setwd("~//R//Rossmann")} else{setwd("~/dataScience/projects/repo/crime/code/")}
-
-
-e=fread('../input/everything.csv', header=T, sep=",", stringsAsFactors=F) 
-e$Context<-NULL #unnecessary duplicate to char_2
-
-p_logi <- names(e)[which(sapply(e, is.logical))]
-for (col in p_logi) set(e, j = col, value = as.numeric(e[[col]]))
-showmap(e)
-
-c=fread('../input/2016-07/2016-07-bedfordshire-street.csv') %>% as.data.frame()
-c$Context<-NULL #unnecessary duplicate to char_2
-
-p_logi <- names(c)[which(sapply(c, is.logical))]
-for (col in p_logi) set(c, j = col, value = as.numeric(c[[col]]))
-
+library(ggplot2)
+library(tidyr)   #separate
+require(MASS)
+library(plotly)
+library(dplyr)
 
 
 system('ls -lh ./../input/2016-07/' )
 
-metropolitan = read.csv("../input/2016-07/2016-07-metropolitan-street.csv", header=T, sep=",", stringsAsFactors=F) 
+WIN <- FALSE
+if (WIN) {setwd("~//R//Rossmann")} else{setwd("~/dataScience/projects/repo/crime/code/")}
+
+#path <-'../input/2016-07/2016-07-metropolitan-street.csv'
+#path <-'../input/2016-07/2016-07-bedfordshire-street.csv'
+#path <-'../input/everything.csv'
+path <- '../input/metropolitan_2010_2016.csv'
 
 
-bedfordshire = read.csv("../input/2016-07/2016-07-bedfordshire-street.csv", header=T, sep=",", stringsAsFactors=F) 
-
- total <- merge( metropolitan,  bedfordshire, by="Crime.ID")
-
-str(bedfordshire)
-
-df = read.csv("../input/everything.csv", header=T, sep=",", stringsAsFactors=F) 
+e=fread(path, header=T, sep=",", stringsAsFactors=F) 
 
 
+e$Context<-NULL #unnecessary duplicate to char_2
 
-df <- unique( df[ , 1:11 ] )
+names(e) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
+ "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
+ "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory")
 
-metropolitan$Context<-NULL
-df <- as.data.frame(df)
+ #why na omit doesn´t work ??
+unique(e$Month)
+e<-e[-which(e$Month=="Month"), ] 
+vars <- c("year", "month")
+e <- separate(e, Month, into = vars, sep = "-")
+t_2010_to_2015 = filter(e, as.integer(year) < 2016)
+rm(e)
 
-row.has.na <- apply(metropolitan, 1, function(x){any(is.na(x))})
-sum(row.has.na)
-hasempty<-metropolitan[row.has.na,]
-metropolitanclean <- metropolitan[!row.has.na,]
-
-df<-df[-which(df$Longitude==""), ] 
-df<-df[-which(df$Crime.ID==""), ] 
-
-names(df)
-
-crimes <- subset(df, Crime.type =='Violence and sexual offences',
-select=c(Month, Longitude,Latitude,LSOA.code,LSOA.name,Crime.type)) 
-
-showmap(metropolitan)
 ```
+
+
+
+```{r preprocesing, tidy=T}
+
+
+
+
+row.has.na <- apply(crimes, 1, function(x){any(is.na(x))})
+sum(row.has.na)
+e <- e[!row.has.na,]
+
+
+
+names(t_2010_to_2015)
+
+##subsetting
+crimes <- subset(t_2010_to_2015,  # Crimetype =='Drugs',
+select=c(year, month,  Longitude,Latitude,LSOAcode,LSOAname,Crimetype)) 
+
+
+
+tail(crimes_t_2010_to_2015)
+
+crimes_t_2010_to_2015<-t_2010_to_2015[-which(t_2010_to_2015$Longitude==""), ] 
+
+
+```
+
 
 ## Analisys
 
-You can also embed plots, for example:
+lets see year by crime
 
 
 ```{#anaysis}
 
+showmap(crimes)
 
+showgrap(e)
 
-
-showmap(c)
-showgrap()
 ```
 
+### Analysis by year
+
+```{r, tidy=T}
+
+by_year_and_crime = crimes %>%
+  group_by(year, Crimetype) %>% summarise(count=n())
+
+ggplot(data=by_year_and_crime, aes(x=year, y=count)) +
+  ggtitle("Number of offense insidents 2010 2106") +
+  xlab("Year  2010 2106") +
+  ylab("Number of incidents") + 
+  geom_point(aes(color=Crimetype), size=5.0) + 
+  geom_line(aes(color=Crimetype), size=2.0)
 
 
-```{fuctions}
-showgrap = function(temp) {
-temp <- movie %>% select(movie_title,title_year)
-temp <- temp %>% group_by(title_year) %>% summarise(n=n())
+
+names(t_2010_to_2015)
+tail(crimes)
+temp <- t_2010_to_2015 %>% select(Crimetype,year)
+#temp <- temp %>% group_by(year,Crimetype) %>% summarise(n=n())
+temp <- temp %>% group_by(year) %>% summarise(n=n())
+
 temp <- na.omit(temp)
-p <- plot_ly(temp, x = title_year, y = n, name = "Number of Movies by Year")
+p <- plot_ly(temp, x = year, y = n, name = "Number of crimes by Year")
 p %>%
-  add_trace(y = fitted(loess(n ~ as.numeric(title_year))), x = title_year) %>%
+  add_trace(y = fitted(loess(n ~ as.numeric(year))), x = year) %>%
   layout(title = "Year and Crimes",
          showlegend = FALSE) %>%
   dplyr::filter(n == max(n)) %>%
-  layout(annotations = list(x = title_year, y = n, text = "Peak", showarrow = T))
-}
+  layout(annotations = list(x = year, y = n, text = "Peak", showarrow = T))
+
+
+```
+
+
+```{fuctions}
+
 
 showmap = function(dataset) {
   library(leaflet)
