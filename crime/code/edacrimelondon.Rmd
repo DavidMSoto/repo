@@ -16,7 +16,7 @@ Before being a Data Scientist, I remind you to:
 ```{r read, include=FALSE}
 
 rm(list = ls())
-#library(data.table)
+library(data.table)
 library(ggplot2) # graph
 library(plotly)  # grapgh
 
@@ -31,8 +31,8 @@ if (WIN) {setwd("c:/repo/crime/code/")} else{setwd("~/dataScience/projects/repo/
 
 #path <-'../input/2016-07/2016-07-metropolitan-street.csv'
 #path <-'../input/2016-07/2016-07-bedfordshire-street.csv'
-#path <-'../input/everything.csv'
-path <- '../input/metropolitan_2010_2016.csv'
+path <-'../input/everything.csv'
+#path <- '../input/metropolitan_2010_2016.csv'
 
 
 e=fread(path, colClasses=c(Longitude="character",Latitude="character"),
@@ -44,6 +44,15 @@ e$Context<-NULL #unnecessary duplicate to char_2
 names(e) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
  "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
  "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory")
+
+
+```
+
+
+
+```{r preprocesing, tidy=T}
+
+
 
 row.has.na <- apply(e, 1, function(x){any(is.na(x))})
 sum(row.has.na)
@@ -58,17 +67,8 @@ vars <- c("year", "month")
 e <- separate(e, Month, into = vars, sep = "-")
 e = filter(e, as.integer(year) < 2016)
 
-```
-
-
-
-```{r preprocesing, tidy=T}
-
-
-
-
 ##subsetting
-crimes <- subset(e,  # Crimetype =='Drugs',
+crimes <- subset(e,   Crimetype =='Drugs',
 select=c(year, month,  Longitude,Latitude,LSOAcode,LSOAname,Crimetype)) 
 
 
@@ -85,7 +85,7 @@ lets see year by crime
 
 showmap(crimes)
 
-showYearCrime(e)
+showYearCrime(e,year)
 showplotYearCrime(e)
 ```
 
@@ -94,7 +94,7 @@ showplotYearCrime(e)
 ```{r functions, tidy=T}
 showplotYearCrime = function(dataset) {
 
-by_year_and_crime = crimes %>%
+by_year_and_crime = dataset %>%
   group_by(year, Crimetype) %>% summarise(count=n())
 
 ggplot(data=by_year_and_crime, aes(x=year, y=count)) +
@@ -106,21 +106,27 @@ ggplot(data=by_year_and_crime, aes(x=year, y=count)) +
 
 }
 
-showYearCrime = function(dataset) {
-temp <- dataset %>% select(Crimetype,year)
+showYearCrime = function(dataset, column) {
+  dataset<-e
+  column <-year
+temp <- dataset %>% select(Crimetype,column)
 #temp <- temp %>% group_by(year,Crimetype) %>% summarise(n=n())
-temp <- temp %>% group_by(year) %>% summarise(n=n())
+temp <- temp %>% group_by(column) %>% summarise(n=n())
 
 temp <- na.omit(temp)
-p <- plot_ly(temp, x = year, y = n, name = "Number of crimes by Year")
+p <- plot_ly(temp, x = column, y = n, name = "Number of crimes by Year")
 p %>%
-  add_trace(y = fitted(loess(n ~ as.numeric(year))), x = year) %>%
+  add_trace(y = fitted(loess(n ~ as.numeric(column))), x = column) %>%
   layout(title = "Year and Crimes",
          showlegend = FALSE) %>%
   dplyr::filter(n == max(n)) %>%
-  layout(annotations = list(x = year, y = n, text = "Peak", showarrow = T))
+  layout(annotations = list(x = column, y = n, text = "Peak", showarrow = T))
 
 }
+
+my.function <- function(data, col){
+   data[, col]
+ }
 
 showmap = function(dataset) {
   library(leaflet)

@@ -1,0 +1,33 @@
+---
+title: "sins"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+##crime figures revealed
+
+
+Where are you most likely to be a victim?
+
+top five councils with more crime  
+
+```{r }
+```
+
+## Where are you most likely to be attacked?
+
+##When are you most at risk of sex attacks?
+
+
+```{r pressure, echo=FALSE}
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#which crimes are more related with the moon cicle
+
