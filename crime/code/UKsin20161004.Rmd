@@ -1,0 +1,197 @@
+---
+  title: "othersLondonCrime"
+output: html_document
+
+---
+  
+  Before being a Data Scientist, I remind you to:
+  
+  Learn to tell stories ("storytelling")
+Learn to communicate to non-technical people
+(they don't care about your "xgboost with 1,000,000 interactions and 10,000 trees giving 0.99328 AUC that took days to compute" when the model of your friend is a "linear regression giving 0.987 AUC with coefficients applied to 3 features in 15 seconds")
+ Learn to teach/train (because you need to learn to communicate properly)
+Learn to be a creative person / designer (someone who can bissociate stuff [merge two different stuff] and also incorporate sociocultural elements in a project, product, process...)
+Learn to take vacations =)
+                                              
+                                              
+```{r read, include=FALSE}
+format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
+
+rm(list = ls())
+library(data.table)
+library(ggplot2) # graph
+library(plotly)  # grapgh
+
+library(tidyr)   #separate
+library(dplyr)#select
+
+library(sqldf) # sql
+
+
+system('ls -lh ./../input/' )
+
+WIN <- FALSE
+if (WIN) {setwd("c:/repos/repo/crime/code/")} else{setwd("~/dataScience/projects/repo/crime/code/")}
+
+
+#path <-'../input/2016-07/2016-07-metropolitan-street.csv'
+#path <-'../input/2016-07/2016-07-bedfordshire-street.csv'
+path <-'../input/metropolitan_2010_2016.csv'
+#pathO <- '../input/Outcomes2016.csv'
+#path <- '../input/street2016.csv'
+
+
+s=fread(path, colClasses=c(Longitude="character",Latitude="character"),
+        header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
+
+o=fread(pathO, colClasses=c(Longitude="character",Latitude="character"),
+        header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
+
+s$Context<-NULL #unnecessary
+
+
+
+names(s) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
+               "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
+               "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory")
+
+names(o)<- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
+              "Longitude"  ,  "Latitude"  ,  "Location"  ,   "LSOAcode"     , "LSOAname"  , "Outcome")
+
+format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
+
+
+
+```
+
+
+
+```{r preprocesing, tidy=T}
+
+o = dataclean(o)
+s = dataclean(s)
+
+so = mergesql(o,s)
+
+```
+
+
+
+
+
+## Analisys
+
+lets see year by crime
+
+
+```{r anaysis, include=FALSE}}
+  
+  showmap(crimes)
+  
+  showYearCrime(e)
+  showplotYearCrime(e)
+```
+
+## fuctions
+
+  
+```{r functions cleaning, tidy=T}
+
+  dataclean = function(dataset) {
+    
+    
+    #why na omit doesnŽt work ??
+    unique(dataset$Month)
+    dataset<-dataset[-which(dataset$Month=="Month"), ] 
+    dataset<-dataset[-which(dataset$Latitude==""), ] 
+    
+    vars <- c("year", "month")
+    dataset <- separate(dataset, Month, into = vars, sep = "-")
+    
+    return(dataset)
+    
+  }
+  
+  
+  
+  
+  #data <- merge(x = outcomes, y = street, by = "Crime.ID", all = TRUE)
+  
+  mergesql = function(o,s) {
+    crimes <-  sqldf("SELECT 
+                     -- count(*)
+                     s.Month ,s.Crimetype ,s.Lastoutcomecategory,  o.Longitude, o.Latitude 
+                     FROM s s, o o
+                     where s.CrimeID = o.CrimeID 
+                     and s.Lastoutcomecategory != o.outcome
+                     --   and  s.Month like '2015%'
+                     --   and o.Longitude!=''
+                     --  and s.rowid <= 20
+                     --   and s.Crimetype like '%sexual%'
+                     " )
+    return(crimes)
+  }
+  
+  
+
+  #Cleaning  
+  #row.has.na <- apply(dataset, 1, function(x){any(is.na(x))})
+  #sum(row.has.na)
+  #dataset <- dataset[!row.has.na,]
+  
+  #Filtering   
+  #dataset = filter(dataset, as.integer(year) < 2016)
+  
+  #subsetting
+  #crimes <- subset(e,  # Crimetype =='Drugs',
+  #select=c(year, month,  Longitude,Latitude,LSOAcode,LSOAname,Crimetype)) 
+  
+  ```
+  
+  
+```{r functions ploty, tidy=T}
+  
+  
+  
+  showplotYearCrime = function(dataset) {
+    
+    by_year_and_crime = crimes %>%
+      group_by(year, Crimetype) %>% summarise(count=n())
+    
+    ggplot(data=by_year_and_crime, aes(x=year, y=count)) +
+      ggtitle("Number of offense insidents 2010 2106") +
+      xlab("Year  2010 2106") +
+      ylab("Number of incidents") + 
+      geom_point(aes(color=Crimetype), size=5.0) + 
+      geom_line(aes(color=Crimetype), size=2.0)
+    
+  }
+  
+  showYearCrime = function(dataset) {
+    temp <- dataset %>% select(Crimetype,year)
+    #temp <- temp %>% group_by(year,Crimetype) %>% summarise(n=n())
+    temp <- temp %>% group_by(year) %>% summarise(n=n())
+    
+    temp <- na.omit(temp)
+    p <- plot_ly(temp, x = year, y = n, name = "Number of crimes by Year")
+    p %>%
+      add_trace(y = fitted(loess(n ~ as.numeric(year))), x = year) %>%
+      layout(title = "Year and Crimes",
+             showlegend = FALSE) %>%
+      dplyr::filter(n == max(n)) %>%
+      layout(annotations = list(x = year, y = n, text = "Peak", showarrow = T))
+    
+  }
+  
+  showmap = function(dataset) {
+    library(leaflet)
+    
+    m <- leaflet() %>%
+      addTiles() %>%  # Add default OpenStreetMap map tiles
+      addMarkers(lng=as.integer(dataset$Longitude), lat=as.integer(dataset$Latitude),
+                 popup=dataset$Crimetype,
+                 clusterOptions = markerClusterOptions())
+    m  # Print the map
+  }
+  ```
+  
