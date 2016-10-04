@@ -3,6 +3,90 @@ title: "7sinsAnalisys"
 output: html_document
 ---
 
+---
+title: "7 Sins in NYC"
+author: "Chuan Sun (sundeepblue at gmail dot com)"
+date: "July 17, 2016"
+output: 
+  html_document: 
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 15
+    highlight: tango
+    number_sections: yes
+    theme: flatly
+---
+
+
+
+
+
+# Dataset
+
+The NYPD 7 Major Felony Incidents dataset contains Seven Major Felonies that is quarterly updated at the incident level. It was made public at Dec 29, 2015, and is available [here](https://data.cityofnewyork.us/Public-Safety/NYPD-7-Major-Felony-Incidents/hyij-8hr7). 
+
+
+# Preprocess
+The dataset is 194M in size, and contains around 1.2 million rows with 22 variables. 
+
+```{r, eval=T, message=F, warning=F}
+# install.packages("ff")
+library(ff)
+library(dplyr)
+rm(list = ls())
+
+setwd("~/dataScience/projects/repo/crime/code/")
+
+# since the csv has around 1.1 million lines, we use ffdf for fast loading
+t = read.csv.ffdf(file="../input/NYPD_7_Major_Felony_Incidents.csv", header=TRUE, 
+                  VERBOSE=TRUE, first.rows=10000, next.rows=50000, colClasses=NA)
+
+# convert ffdf type to data.frame for later conversion
+t = as.data.frame(t)
+
+# convert some columns with unnecesary factor type into character type
+t$Identifier = as.character(t$Identifier)
+t$Occurrence.Date = as.character(t$Occurrence.Date)
+t$Location.1 = as.character(t$Location.1)
+
+# we are only interested in offenses in last 10 years [2006, 2015]
+t_2006_to_2015 = filter(t, Occurrence.Year >= 2006)
+# ignore observations with missing value
+t_2006_to_2015 = na.omit(t_2006_to_2015)
+
+class(t_2006_to_2015$Occurrence.Month)
+# re-level factor variable "Day.of.Week"
+t_2006_to_2015$Day.of.Week = factor(t_2006_to_2015$Day.of.Week, 
+                                    levels=c("Monday", "Tuesday", "Wednesday", 
+                                             "Thursday", "Friday", "Saturday", "Sunday"));
+
+# re-level factor variable "Occurrence.Month"
+t_2006_to_2015$Occurrence.Month = factor(t_2006_to_2015$Occurrence.Month, 
+                                  levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
+
+# define 3 helper functions for string manipulation
+trim_spaces = function(x) { gsub("^\\s+|\\s+$", "", x) }
+trim_first_char = function(x) { gsub('^.', '', x) }
+trim_last_char = function(x) { gsub('.$', '', x) }
+
+# parse the column "Location.1"
+loc_strings = t_2006_to_2015$Location.1
+L = sapply(loc_strings, strsplit, split=',')
+L = sapply(L, unlist)
+loc_x = sapply(L[1,], trim_first_char)
+loc_y = sapply(L[2,], trim_last_char)
+
+# add two columns "loc_x" and "loc_y"
+t_2006_to_2015$loc_x = as.numeric(loc_x)
+t_2006_to_2015$loc_y = as.numeric(loc_y)
+
+ write.table(t_2006_to_2015, file="../input/NYPD_7_FELONIES_2006_2015.csv", sep=",")
+```
+
+After preprocessing, we load the preprocessed dataset as follows. First we load several libraries.
+
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```

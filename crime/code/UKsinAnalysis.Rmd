@@ -4,9 +4,9 @@ output: html_document
 
 ---
   
-  Before being a Data Scientist, I remind you to:
+#Before being a Data Scientist, I remind you to:
   
-  Learn to tell stories ("storytelling")
+Learn to tell stories ("storytelling")
 Learn to communicate to non-technical people
 (they don't care about your "xgboost with 1,000,000 interactions and 10,000 trees giving 0.99328 AUC that took days to compute" when the model of your friend is a "linear regression giving 0.987 AUC with coefficients applied to 3 features in 15 seconds")
  Learn to teach/train (because you need to learn to communicate properly)
@@ -28,11 +28,11 @@ library(dplyr)#select
 library(sqldf) # sql
 
 
-system('ls -lh ./../input/' )
 
-WIN <- FALSE
+
+WIN <- TRUE
 if (WIN) {setwd("c:/repos/repo/crime/code/")} else{setwd("~/dataScience/projects/repo/crime/code/")}
-
+if (WIN) {system('dir') } else {system('ls -lh ./../input/' )} 
 
 #path <-'../input/2016-07/2016-07-metropolitan-street.csv'
 #path <-'../input/2016-07/2016-07-bedfordshire-street.csv'
@@ -193,5 +193,13 @@ lets see year by crime
                  clusterOptions = markerClusterOptions())
     m  # Print the map
   }
+  
+   factorMonth = function(dataset) {
+  dataset$Occurrence.Month = factor(dataset$Occurrence.Month, 
+                                  levels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                                           "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""));
+	}
+	
+										   
   ```
   
