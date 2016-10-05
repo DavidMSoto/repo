@@ -27,7 +27,10 @@ top five councils with more crime
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 #which crimes are more related with the moon cicle
+
+#han aumentado los casos resueltos in london? - ayuda de emilio para redactarlo
+
+
 
