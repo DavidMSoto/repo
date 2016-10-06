@@ -1,3 +1,6 @@
+*.html
+*.Rhistory
 *.csv
 *.zip
 *.RData
+.Rproj.user

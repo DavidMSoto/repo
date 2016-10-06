@@ -22,6 +22,7 @@ library(ggplot2)
 library(plotly)
 library(data.table)
 library(formattable)
+
 ```
 
 ## Reading the data.
@@ -29,8 +30,10 @@ library(formattable)
 What are the variables? What are its dimensions?
 
 ```{r }
-setwd("~/dataScience/projects/repo/imdb/input/")
-movie <- read.csv('movie_metadata.csv',header=T,stringsAsFactors = F)
+WIN <- TRUE
+if (WIN) {setwd("c:/repos/repo/imdb/code/")} else{setwd("~/dataScience/projects/repo/imdb/input/")}
+
+movie <- read.csv('../input/movie_metadata.csv',header=T,stringsAsFactors = F)  %>% as.data.frame()
 str(movie)
 dim(movie)
 
@@ -44,9 +47,10 @@ this data. For this, we ask a few questions.
 Lets see the trend.
 
 ```{r}
+
 temp <- movie %>% select(movie_title,title_year)
 temp <- temp %>% group_by(title_year) %>% summarise(n=n())
-temp <- na.omit(temp)
+temp <- na.omit(temp)%>% as.data.frame()
 p <- plot_ly(temp, x = title_year, y = n, name = "Number of Movies by Year")
 p %>%
   add_trace(y = fitted(loess(n ~ as.numeric(title_year))), x = title_year) %>%

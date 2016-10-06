@@ -8,29 +8,41 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```
 
-##crime figures revealed
+##crime figures revealed (metropolitan police)
+
+where was the data 
+
+https://data.police.uk/data/
 
 
-Where are you most likely to be a victim?
-
-top five councils with more crime  
 
 ```{r }
 ```
+    
+#Questions to be answered 
 
-## Where are you most likely to be attacked?
+    (1) Has london becoming safer over the last 10 years?
+    (2) Which months in one year can be considered as unsafe?
+    (3) Which days in a week can be considered as unsafe? 
+    (4) Which hours in a day can be considered as unsafe?
+    (5) Which boroughs are more unsafe than others?
 
-##When are you most at risk of sex attacks?
+# Where are you most likely to be attacked?
+#When are you most at risk of sex attacks?
+#which crimes are more related with the moon cicle
+#han aumentado los casos resueltos in london? - ayuda de emilio para redactarlo
+#Where are you most likely to be a victim?
+#top five councils with more crime  
+
 
 
 ```{r pressure, echo=FALSE}
 
 ```
 
+Visualization and analysis
+Trend in the last 10 years (2006 - 2015)
 
-#which crimes are more related with the moon cicle
-
-#han aumentado los casos resueltos in london? - ayuda de emilio para redactarlo
 
 
 

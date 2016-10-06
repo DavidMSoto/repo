@@ -1,19 +1,27 @@
-rm (list = ls())
-install.packages(c("rj", "rj.gd"), repos="http://download.walware.de/rj-2.0")
+
+
+#https://github.com/sundeepblue/movie_rating_prediction/blob/master/movie_rating_prediction.r
+
+rm(list = ls())
+
 
 
 library(ggplot2)
 library(VIM)
 library(mice)
 library(vcd)
-require(car)
+library(car)
 library(tabplot)
 library(PerformanceAnalytics)
 library(MASS)
 library(glmnet)
+library(googleVis)
+library(dplyr)
 # ===============================================================================================
-setwd("~/kaggle/data/imdb/code/")
-movies = read.csv("../input/movie_metadata.csv")
+WIN <- TRUE
+if (WIN) {setwd("c:/repos/repo/imdb/code/")} else{setwd("~/dataScience/projects/repo/imdb/input/")}
+
+movies <- read.csv('../input/movie_metadata.csv',header=T,stringsAsFactors = F) %>% as.data.frame()
 
 
 # ===============================================================================================
@@ -82,8 +90,7 @@ title("IMDB score vs content rating")
 
 # ===============================================================================================
 # top actors
-library(googleVis)
-library(dplyr)
+
 m1 = movies %>% select(actor_1_name, actor_1_facebook_likes) %>% 
   group_by(actor_1_name) %>% summarize(appear.count=n())
 

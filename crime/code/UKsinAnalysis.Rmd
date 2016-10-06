@@ -39,6 +39,7 @@ if (WIN) {system('dir') } else {system('ls -lh ./../input/' )}
 
 street <-'../input/streetMetropolitan2016.csv'
 out <-'../input/outcomesMetropolitan2016.csv'
+allTime <-'../input/streetMetropolitan20102015.csv'
 
 
 s=fread(street, colClasses=c(Longitude="character",Latitude="character"),
@@ -47,11 +48,15 @@ s=fread(street, colClasses=c(Longitude="character",Latitude="character"),
 o=fread(out, colClasses=c(Longitude="character",Latitude="character"),
         header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
 
-s$Context<-NULL #unnecessary
+
+allTimedataset =fread(allTime, colClasses=c(Longitude="character",Latitude="character"),
+        header=T, sep=",", verbose = FALSE, showProgress = TRUE) %>% as.data.frame() # SILENCE
+
+allTimedataset$Context<-NULL #unnecessary
 
 
 
-names(s) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
+names(allTimedataset) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
                "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
                "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory")
 
@@ -75,14 +80,15 @@ format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
 
 ```{r anaysis, include=FALSE}}
   
-o = dataclean(o)
+allTimedataset = dataclean(allTimedataset)
+
 s = dataclean(s)
 
 
 so = mergesql(o,s)
 drugs = mergesqldrugs(o,s)
 
-sDrugs <- s %>% filter(Crimetype == 'Drugs')
+sDrugs <- allTimedataset %>% filter( Crimetype == 'Drugs' |  Crimetype == 'Violence and sexual offences')
 weapons <- s %>% filter(Crimetype == 'Possession of weapons')
 sexual <- s %>% filter(Crimetype == 'Violence and sexual offences')
 
@@ -96,8 +102,8 @@ sexual <- s %>% filter(Crimetype == 'Violence and sexual offences')
 
   showmap(crimes)
   
-  showYearCrime(e)
-  showplotYearCrime(e)
+  showYearCrime(sDrugs)
+  showplotYearCrime(sDrugs)
   
   
 
@@ -116,16 +122,19 @@ mapImageData2 <- get_map("LONDON",
     maptype = "terrain",
     zoom = 12)
 
-d = sexual %>%     mutate(lon = Longitude, lat = Latitude)
+d = drugs %>%     mutate(lon = Longitude, lat = Latitude)
 d$lon <- as.numeric (d$lon)
 d$lat <- as.numeric (d$lat)
+d$Longitude <-  as.numeric (d$Longitude)
+d$Latitude <- as.numeric (d$Latitude)
 
-http://www.bytemining.com/wp-content/uploads/2010/08/r_hpc_II.pdf
-https://www.r-bloggers.com/google-maps-and-ggmap/
-  https://sundeepblue.github.io/7SinsInNYC.html
+#http://www.bytemining.com/wp-content/uploads/2010/08/r_hpc_II.pdf
+#https://www.r-bloggers.com/google-maps-and-ggmap/
+ # https://sundeepblue.github.io/7SinsInNYC.html
 
 draw_density_map_of_offenses_for_borough(mapImageData2, d)
 
+#http://gizmodo.com/5941436/how-to-make-a-gif-in-five-easy-steps
 
 draw_density_map_of_offenses_for_borough = function(area_map_obj, d) {
     ggmap(area_map_obj, base_layer = ggplot(aes(x = lon, y = lat), data = d)) + 
@@ -230,7 +239,7 @@ lets see year by crime
   
   showplotYearCrime = function(dataset) {
     
-    by_year_and_crime = crimes %>%
+    by_year_and_crime = dataset %>%
       group_by(year, Crimetype) %>% summarise(count=n())
     
     ggplot(data=by_year_and_crime, aes(x=year, y=count)) +
@@ -250,7 +259,7 @@ lets see year by crime
     temp <- na.omit(temp)
     p <- plot_ly(temp, x = year, y = n, name = "Number of crimes by Year")
     p %>%
-      add_trace(y = fitted(loess(n ~ as.numeric(year))), x = year) %>%
+      add_trace(y = fitted(loess(n ~ year)), x = year) %>%
       layout(title = "Year and Crimes",
              showlegend = FALSE) %>%
       dplyr::filter(n == max(n)) %>%
