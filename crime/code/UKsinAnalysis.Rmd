@@ -4,15 +4,9 @@ output: html_document
 
 ---
   
-#Before being a Data Scientist, I remind you to:
+#Before being a Data Scientist, I remind you to: 
   
-Learn to tell stories ("storytelling")
-Learn to communicate to non-technical people
-(they don't care about your "xgboost with 1,000,000 interactions and 10,000 trees giving 0.99328 AUC that took days to compute" when the model of your friend is a "linear regression giving 0.987 AUC with coefficients applied to 3 features in 15 seconds")
- Learn to teach/train (because you need to learn to communicate properly)
-Learn to be a creative person / designer (someone who can bissociate stuff [merge two different stuff] and also incorporate sociocultural elements in a project, product, process...)
-Learn to take vacations =)
-                                              
+               
                                               
 ```{r read, include=FALSE}
 format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
@@ -37,9 +31,10 @@ if (WIN) {system('dir') } else {system('ls -lh ./../input/' )}
 #path <-'../input/2016-07/2016-07-metropolitan-street.csv'
 #path <-'../input/2016-07/2016-07-bedfordshire-street.csv'
 
-street <-'../input/streetMetropolitan2016.csv'
-out <-'../input/outcomesMetropolitan2016.csv'
-allTime <-'../input/streetMetropolitan20102015.csv'
+#street <-'../input/streetMetropolitan2016.csv'
+#out <-'../input/outcomesMetropolitan2016.csv'
+
+allTimePath <-'../input/streetMetropolitan20102015.csv'
 
 
 s=fread(street, colClasses=c(Longitude="character",Latitude="character"),
@@ -49,16 +44,59 @@ o=fread(out, colClasses=c(Longitude="character",Latitude="character"),
         header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
 
 
-allTimedataset =fread(allTime, colClasses=c(Longitude="character",Latitude="character"),
-        header=T, sep=",", verbose = FALSE, showProgress = TRUE) %>% as.data.frame() # SILENCE
-
-allTimedataset$Context<-NULL #unnecessary
 
 
 
-names(allTimedataset) <- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
-               "Longitude"   ,   "Latitude"     ,      "Location"    ,    "LSOAcode"     ,       
+names(allTimedataset)
+
+
+
+rm(list = ls())
+
+
+# read --------------------------------------------------------------------
+
+
+
+readData <- function(path.name, file.name,  missing.types, types) {
+  fread(  paste(path.name, file.name, sep="") , 
+            colClasses=types,
+            na.strings=missing.types, 
+          verbose = FALSE, showProgress = TRUE )%>% as.data.frame() 
+}
+
+
+
+
+
+types <- c(
+  
+'Crime ID'  =    'character',
+'Month'               =    'character', 
+'Reported by'          =    'NULL',
+'Falls within'         =    'NULL',
+'Longitude'          =  'integer',    # Month
+'Latitude'           =  'integer',    # Month
+'Location'           =  'character',    # Month
+'LSOA code'            ='character',
+'LSOA name'            ='character',
+'Crime type'           ='character',
+'Last outcome category'='character',
+'Context'              ='NULL'
+
+)
+
+
+missing.types <- c("NA", "")
+
+crime.raw <- readData('../input/', "streetMetropolitan20102015.csv",   missing.types,types  )
+
+
+
+
+names(crime.raw) <- c( "CrimeID"  , "Month"  ,   "Longitude",   "Latitude",      "Location",    "LSOAcode",       
                "LSOAname"     ,        "Crimetype"   ,         "Lastoutcomecategory")
+
 
 names(o)<- c( "CrimeID"  , "Month"  ,  "Reportedby"    ,  "Fallswithin" ,  
               "Longitude"  ,  "Latitude"  ,  "Location"  ,   "LSOAcode"     , "LSOAname"  , "Outcome")
@@ -67,6 +105,15 @@ format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
 
 
 
+
+
+  
+  #Filtering   
+  #dataset = filter(dataset, as.integer(year) < 2016)
+  
+  #subsetting
+  #crimes <- subset(e,  # Crimetype =='Drugs',
+  #select=c(year, month,  Longitude,Latitude,LSOAcode,LSOAname,Crimetype)) 
 ```
 
 
@@ -79,11 +126,80 @@ format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
 
 
 ```{r anaysis, include=FALSE}}
+
+
+  #Cleaning  
+row.has.na <- apply(crime.raw, 1, function(x){any(is.na(x))})
+sum(row.has.na)
+str(row.has.na)
+
   
-allTimedataset = dataclean(allTimedataset)
+crime.raw.void <- crime.raw[row.has.na,]
+crime.raw.clean <- crime.raw[!row.has.na,]
 
-s = dataclean(s)
+require(Amelia)
+missmap(crime.raw.void, main="crime.raw.void - Missings Map", 
+        col=c("yellow", "black"), legend=FALSE)
 
+
+ 
+    
+ dataclean = function(dataset) {
+    
+
+    dataset<-dataset[-which(dataset$Month=="Month"), ] 
+
+    vars <- c("year", "month")
+    dataset <- separate(dataset, Month, into = vars, sep = "-")
+    
+    return(dataset)
+    
+  }
+  
+
+crime.raw.clean = dataclean(crime.raw.clean) # we remove some duplicate headers
+
+
+
+```
+
+#lets  see which types of crimes does not have id 
+
+```{r preprocesing, tidy=T}
+
+barplot(table(crime.raw.clean$Crimetype),
+        names.arg =  unique(crime.raw.clean$Crimetype),
+        main="Types Crimes recorded in the system", col="black")
+
+barplot(table(crime.raw.void$Crimetype),
+        names.arg =  unique(crime.raw.void$Crimetype),
+        main="Types crimes don't keep it ", col="black")
+# antisocial behaviour is not recorded 
+```
+
+#let see how many of the crimes has a positive outcome (for the societe not the offedner)
+
+```{r preprocesing, tidy=T}
+
+    by_type_crime_out = crime.raw.clean %>%   filter( Crimetype == 'Violent crime' )%>%
+      group_by(Crimetype, Lastoutcomecategory) %>% summarise(count=n()) 
+
+# Stacked Bar Plot with Colors and Legend
+counts <- table( by_type_crime_out$count, by_type_crime_out$Lastoutcomecategory)
+barplot(counts, main="outcomes Violets crimes",
+  xlab="Number of Violents", col=c("darkblue","red"),
+  legend = rownames(counts)) 
+
+
+
+
+
+```
+
+
+
+
+```{r preprocesing, tidy=T}
 
 so = mergesql(o,s)
 drugs = mergesqldrugs(o,s)
@@ -91,14 +207,6 @@ drugs = mergesqldrugs(o,s)
 sDrugs <- allTimedataset %>% filter( Crimetype == 'Drugs' |  Crimetype == 'Violence and sexual offences')
 weapons <- s %>% filter(Crimetype == 'Possession of weapons')
 sexual <- s %>% filter(Crimetype == 'Violence and sexual offences')
-
-
-```
-
-
-## Analisys where 
-
-```{r preprocesing, tidy=T}
 
   showmap(crimes)
   
@@ -169,21 +277,7 @@ lets see year by crime
   
 ```{r functions cleaning, tidy=T}
 
-  dataclean = function(dataset) {
-    
-    
-    #why na omit doesnŽt work ??
-    unique(dataset$Month)
-    dataset<-dataset[-which(dataset$Month=="Month"), ] 
-    dataset<-dataset[-which(dataset$Latitude==""), ] 
-    
-    vars <- c("year", "month")
-    dataset <- separate(dataset, Month, into = vars, sep = "-")
-    
-    return(dataset)
-    
-  }
-  
+ 
   
   
   

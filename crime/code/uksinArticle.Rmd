@@ -3,25 +3,112 @@ title: "sins"
 output: html_document
 ---
 
+##crime figures revealed (metropolitan police)
+
+where was the data  https://data.police.uk/data/
+
+i don't have any questions to be answered for this dataset, let's the dataset make the questions to answer
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+rm(list = ls())
+library(data.table)
+library(ggplot2) # graph
+library(plotly)  # grapgh
+
+library(tidyr)   #separate
+library(dplyr)#select
+
+library(sqldf) # sql
+
+
+
+
+WIN <- TRUE
+if (WIN) {setwd("c:/repos/repo/crime/code/")} else{setwd("~/dataScience/projects/repo/crime/code/")}
+
+
 ```
 
-##crime figures revealed (metropolitan police)
-
-where was the data 
-
-https://data.police.uk/data/
+#reading the data
 
 
 
-```{r }
+```{r readData}
+
+readData <- function(path.name, file.name,  missing.types, types) {
+  fread(  paste(path.name, file.name, sep="") , 
+            colClasses=types,
+            na.strings=missing.types, 
+          verbose = FALSE, showProgress = TRUE )%>% as.data.frame() 
+}
+types <- c(
+  
+'Crime ID'  =    'character',
+'Month'               =    'character', 
+'Reported by'          =    'NULL',
+'Falls within'         =    'NULL',
+'Longitude'          =  'integer',    # Month
+'Latitude'           =  'integer',    # Month
+'Location'           =  'character',    # Month
+'LSOA code'            ='character',
+'LSOA name'            ='character',
+'Crime type'           ='character',
+'Last outcome category'='character',
+'Context'              ='NULL'
+
+)
+
+
+missing.types <- c("NA", "")
+
+crime.raw <- readData('../input/', "streetMetropolitan20102015.csv",   missing.types,types  )
+
 ```
     
+
+#data Cleaning
+
+
+```{r pressure, echo=FALSE}
+
+row.has.na <- apply(crime.raw, 1, function(x){any(is.na(x))})
+
+crime.raw.void <- crime.raw[row.has.na,]
+crime.raw.clean <- crime.raw[!row.has.na,]
+
+require(Amelia)
+missmap(crime.raw.void, main="crime.raw.void - Missings Map", 
+        col=c("yellow", "black"), legend=FALSE)
+
+
+ 
+    
+ dataclean = function(dataset) {
+    dataset<-dataset[-which(dataset$Month=="Month"), ] 
+    vars <- c("year", "month")
+    dataset <- separate(dataset, Month, into = vars, sep = "-")
+    return(dataset)
+  }
+  
+
+crime.raw.clean = dataclean(crime.raw.clean) # we remove some duplicate headers
+
+
+
+```
+
+
+```
+
+Visualization and analysis
+Trend in the last 10 years (2006 - 2015)
+
+
 #Questions to be answered 
 
-    (1) Has london becoming safer over the last 10 years?
+    (1) Has london becoming safer over the last 5 years?
     (2) Which months in one year can be considered as unsafe?
     (3) Which days in a week can be considered as unsafe? 
     (4) Which hours in a day can be considered as unsafe?
@@ -33,16 +120,4 @@ https://data.police.uk/data/
 #han aumentado los casos resueltos in london? - ayuda de emilio para redactarlo
 #Where are you most likely to be a victim?
 #top five councils with more crime  
-
-
-
-```{r pressure, echo=FALSE}
-
-```
-
-Visualization and analysis
-Trend in the last 10 years (2006 - 2015)
-
-
-
 
