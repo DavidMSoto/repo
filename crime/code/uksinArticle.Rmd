@@ -101,6 +101,33 @@ crime.raw.clean = dataclean(crime.raw.clean) # we remove some duplicate headers
 
 
 ```
+ "Offender sent to prison"           				      --> high crime             
+ "Offender given conditional discharge"         	--> medium crime   	
+ "Offender fined"                                	--> low crime 
+ "Court result unavailable"                      	--> NA
+ "Suspect charged as part of another case"        --> high crime    
+ "Offender ordered to pay compensation"          	--> no serious crime     
+ "Offender given suspended prison sentence"      	--> serious crime 
+ "Offender given a drugs possession warning"     	--> drugs possession 
+ "Offender given absolute discharge"             	--> drugs possession
+ "Unable to prosecute suspect"                    
+ "Defendant sent to Crown Court"                 
+ "Formal action is not in the public interest"  
+ "Investigation complete; no suspect identified"
+ "Defendant found not guilty"                   
+ "Offender given community sentence"            
+ "Offender otherwise dealt with"                
+ "Court case unable to proceed"                 
+ "Offender given a caution"                     
+ "Local resolution"                             
+ "Offender deprived of property"                --> wtf
+ "Offender given penalty notice"                --> low crime 
+ "Awaiting court outcome"                       -->	NA		
+ "Under investigation"       					-->	NA					                   
+ 
+ 
+ high / medium / low /lowest
+ 
 
 Visualization and analysis
 Trend in the last 10 years (2006 - 2015)

@@ -15,7 +15,7 @@ rm(list = ls())
 library(data.table)
 library(ggplot2) # graph
 library(plotly)  # grapgh
-
+library(ggthemes) # visualization
 library(tidyr)   #separate
 library(dplyr)#select
 
@@ -36,20 +36,7 @@ if (WIN) {system('dir') } else {system('ls -lh ./../input/' )}
 
 allTimePath <-'../input/streetMetropolitan20102015.csv'
 
-
-s=fread(street, colClasses=c(Longitude="character",Latitude="character"),
-        header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
-
-o=fread(out, colClasses=c(Longitude="character",Latitude="character"),
-        header=T, sep=",", verbose = FALSE, showProgress = FALSE) %>% as.data.frame() # SILENCE
-
-
-
-
-
 names(allTimedataset)
-
-
 
 rm(list = ls())
 
@@ -89,7 +76,7 @@ types <- c(
 
 missing.types <- c("NA", "")
 
-crime.raw <- readData('../input/', "streetMetropolitan20102015.csv",   missing.types,types  )
+crime.raw <- readData('../input/', "streetMetropolitan20102015.csv",   missing.types, types  )
 
 
 
@@ -130,12 +117,14 @@ format(Sys.time(), "%d-%m-%Y--%H:%M:%S")
 
   #Cleaning  
 row.has.na <- apply(crime.raw, 1, function(x){any(is.na(x))})
+
 sum(row.has.na)
 str(row.has.na)
 
   
 crime.raw.void <- crime.raw[row.has.na,]
 crime.raw.clean <- crime.raw[!row.has.na,]
+
 
 require(Amelia)
 missmap(crime.raw.void, main="crime.raw.void - Missings Map", 
@@ -163,9 +152,34 @@ crime.raw.clean = dataclean(crime.raw.clean) # we remove some duplicate headers
 
 ```
 
-#lets  see which types of crimes does not have id 
+# lets  see which types of crimes does not have id 
 
 ```{r preprocesing, tidy=T}
+
+crime.raw.clean.type.outcome <- crime.raw.clean %>%
+  group_by(Crimetype,Lastoutcomecategory ) %>%
+  summarise(num_crimes = n())
+
+ggplot(crime.raw.clean.type.outcome, aes(x = Crimetype, y = num_crimes, fill = Lastoutcomecategory)) +
+  geom_bar(stat = 'identity', position = 'fill', colour = 'black') +
+  coord_flip() +
+  labs(y = 'Proportion of crimes', 
+       x = 'Crimes',
+       title = 'Outcomes') +  theme_few()
+
+crime.raw.void.type.outcome <- crime.raw.void %>%
+  group_by(Crimetype,Lastoutcomecategory ) %>%
+  summarise(num_crimes = n())
+
+
+ggplot(crime.raw.void.type.outcome, aes(x = Crimetype, y = num_crimes, fill = Lastoutcomecategory)) +
+  geom_bar(stat = 'identity', position = 'fill', colour = 'black') +
+  coord_flip() +
+  labs(y = 'Proportion of crimes', 
+       x = 'Crimes',
+       title = 'Outcomes') +  theme_few()
+
+
 
 barplot(table(crime.raw.clean$Crimetype),
         names.arg =  unique(crime.raw.clean$Crimetype),
@@ -176,6 +190,29 @@ barplot(table(crime.raw.void$Crimetype),
         main="Types crimes don't keep it ", col="black")
 # antisocial behaviour is not recorded 
 ```
+
+
+#outcomes
+
+```{r outcomes file, tidy=T}
+
+
+crime.outcomes <-fread( '../input/outcomes20122015.csv' , 
+           
+            na.strings=missing.types, 
+          verbose = FALSE, showProgress = TRUE )%>% as.data.frame() 
+
+crime.outcomes <- readData('../input/outcomes20122015.csv',   missing.types, types  )
+names(crime.outcomes)
+
+row.has.na <- apply(crime.outcomes, 1, function(x){any(is.na(x))})
+
+crime.outcome.void <- crime.outcomes[row.has.na,]
+
+crime.outcome.clean <- crime.outcomes[!row.has.na,]
+```
+
+
 
 #let see how many of the crimes has a positive outcome (for the societe not the offedner)
 
