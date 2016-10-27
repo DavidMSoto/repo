@@ -1,6 +1,9 @@
 
 rm(list = ls())
 
+library(data.table)
+library(tidyr)   
+library(dplyr)   
 WIN <- TRUE
 if (WIN) {setwd("c:/repos/repo/allState/code/")} else{setwd("~/dataScience/projects/repo/AllState/code/")}
 
