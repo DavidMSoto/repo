@@ -15,6 +15,8 @@ if (WIN) {setwd("c:/repos/repo/santander/code/")}
 
 
 
+
+
 little = function() {
   
   df <- fread("../input/train2.csv",nrows=-1)
@@ -26,18 +28,46 @@ little = function() {
   # df <- fread("train_ver2.csv",nrows=limit.rows)
   
   str(df)
-  
-  
-  df$fecha_dato <- as.POSIXct(strptime(df$fecha_dato,format="%Y-%m-%d"))
-  df$fecha_alta <- as.POSIXct(strptime(df$fecha_alta,format="%Y-%m-%d"))
-  df$month <- month(df$fecha_dato)
-  unique(df$fecha_dato)
-  
-  
+
   write.csv(df, file="../input/little.csv")
 }
 
-featureEnginering = function() {
+
+# read --------------------------------------------------------------------
+#fecha_dato 				The table is partitioned for this column
+#ncodpers 				  Customer code
+#ind_empleado 			Employee index: A active, B ex employed, F filial, N not employee, P pasive
+#pais_residencia 		Customer's Country residence
+#sexo 				    	Customer's sex
+#age 					      Age
+#fecha_alta 				The date in which the customer became as the first holder of a contract in the bank
+#ind_nuevo 			  	New customer Index. 1 if the customer registered in the last 6 months.
+#antiguedad 				Customer seniority (in months)
+#indrel 				  	1 (First/Primary), 99 (Primary customer during the month but not at the end of the month)
+#ult_fec_cli_1t 			Last date as primary customer (if he isn't at the end of the month)
+#indrel_1mes 			Customer type at the beginning of the month ,1 (First/Primary customer), 2 (co-owner ),P (Potential),3 (former primary), 4(former co-owner)
+#tiprel_1mes 			Customer relation type at the beginning of the month, A (active), I (inactive), P (former customer),R (Potential)
+#indresi 				  Residence index (S (Yes) or N (No) if the residence country is the same than the bank country)
+#indext 					Foreigner index (S (Yes) or N (No) if the customer's birth country is different than the bank country)
+#conyuemp 				Spouse index. 1 if the customer is spouse of an employee
+#canal_entrada 		channel used by the customer to join
+#indfall 			  	Deceased index. N/S
+#tipodom 				  Addres type. 1, primary address
+#cod_prov 				Province code (customer's address)
+#nomprov 			  	Province name
+#ind_actividad_cliente 	Activity index (1, active customer; 0, inactive customer)
+#renta 					  Gross income of the household
+#segmento 				segmentation: 01 - VIP, 02 - Individuals 03 - college graduated
+
+#exposure         
+#holdings         
+
+featureEnginering = function(df) {
+  
+  #dates
+  df$fecha_dato <- as.POSIXct(strptime(df$fecha_dato,format="%Y-%m-%d"))
+  df$fecha_alta <- as.POSIXct(strptime(df$fecha_alta,format="%Y-%m-%d"))
+  df$month <- month(df$fecha_dato)
   
   # age
   df$month <- month(df$fecha_dato)
@@ -109,11 +139,32 @@ featureEnginering = function() {
   #Convert all the features to numeric dummy indicators
   features <- grepl("ind_+.*ult.*",names(df))
   df[,features] <- lapply(df[,features],function(x)as.integer(round(x)))
-  df$total.services <- rowSums(df[,features],na.rm=TRUE)
+  df$total_services <- rowSums(df[,features],na.rm=TRUE)
+  
+  return(df)
+  
   }
 
 
 
+##*****************************************
+
+rm(list = ls())
+
+library(data.table)
+library(dplyr)
+library(tidyr)
+library(lubridate)
+library(sqldf) # sql
+
+
+
+set.seed(1)
+
+#limit.rows <- 2000000
+
+WIN <- TRUE
+if (WIN) {setwd("c:/repos/repo/santander/code/")}
 
 
 little()
@@ -121,4 +172,70 @@ little()
 
 
 df <- fread("../input/little.csv",nrows=-1)
-df <- readLines("../input/train.csv")
+
+df_e <- featureEnginering(df)
+
+names(df_e)
+unique(f$ncodpers)
+
+  single_old <-  sqldf("SELECT 
+                       *
+                   FROM df_e
+                   where 
+                    nomprov = 'ALBACETE'
+                      and ncodpers = '36280'
+                   " )
+  
+  
+  single_new <-  sqldf("SELECT 
+                           *
+                   FROM df_e
+                   where 
+                    nomprov = 'ALBACETE'
+                  and ncodpers = '745700'
+                   " )
+  
+  multi_uni <-  sqldf("SELECT 
+                         ncodpers,  segmento, renta,  count(ncodpers), total_services
+                   FROM df_e
+                   where 
+                    nomprov = 'ALBACETE'  
+                  -- and count(ncodpers) ='17' 
+                  -- and  segmento = '03 - UNIVERSITARIO'
+                  -- and total_services != '2'
+                    group by ncodpers, segmento
+                    order by 4
+                  
+                   " )
+  
+  
+  
+  # read --------------------------------------------------------------------
+  #ind_ahor_fin_ult1 	Saving Account
+  #ind_aval_fin_ult1 	Guarantees
+  #ind_cco_fin_ult1 	Current Accounts
+  #ind_cder_fin_ult1 	Derivada Account
+  #ind_cno_fin_ult1 	Payroll Account
+  #ind_ctju_fin_ult1 	Junior Account
+  #ind_ctma_fin_ult1 	Más particular Account
+  #ind_ctop_fin_ult1 	particular Account
+  #ind_ctpp_fin_ult1 	particular Plus Account
+  #ind_deco_fin_ult1 	Short-term deposits
+  #ind_deme_fin_ult1 	Medium-term deposits
+  #ind_dela_fin_ult1 	Long-term deposits
+  #ind_ecue_fin_ult1 	e-account
+  #ind_fond_fin_ult1 	Funds
+  #ind_hip_fin_ult1 	Mortgage
+  #ind_plan_fin_ult1 	Pensions
+  #ind_pres_fin_ult1 	Loans
+  #ind_reca_fin_ult1 	Taxes
+  #ind_tjcr_fin_ult1 	Credit Card
+  #ind_valo_fin_ult1 	Securities
+  #ind_viv_fin_ult1 	Home Account
+  #ind_nomina_ult1 	  Payroll
+  #ind_nom_pens_ult1 	Pensions
+  #ind_recibo_ult1 	  Direct Debit
+  
+         
+  
+  
