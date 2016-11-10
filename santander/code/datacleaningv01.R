@@ -59,6 +59,8 @@ little = function() {
 #renta 					  Gross income of the household
 #segmento 				segmentation: 01 - VIP, 02 - Individuals 03 - college graduated
 
+## grupos de clientes - 
+
 #exposure         
 #holdings         
 
@@ -212,15 +214,16 @@ unique(f$ncodpers)
   
   # read --------------------------------------------------------------------
   #ind_ahor_fin_ult1 	Saving Account
-  #ind_aval_fin_ult1 	Guarantees
-  #ind_cco_fin_ult1 	Current Accounts
+  #ind_aval_fin_ult1 	Guarantees        --> esto tiene pinta que lo cogeran si tienen un prestamo (grupo clientes exposure negativo)
+  #ind_cco_fin_ult1 	Current Accounts  --> 
   #ind_cder_fin_ult1 	Derivada Account
   #ind_cno_fin_ult1 	Payroll Account
   #ind_ctju_fin_ult1 	Junior Account
   #ind_ctma_fin_ult1 	Más particular Account
   #ind_ctop_fin_ult1 	particular Account
   #ind_ctpp_fin_ult1 	particular Plus Account
-  #ind_deco_fin_ult1 	Short-term deposits
+  
+  #ind_deco_fin_ult1 	Short-term deposits 
   #ind_deme_fin_ult1 	Medium-term deposits
   #ind_dela_fin_ult1 	Long-term deposits
   #ind_ecue_fin_ult1 	e-account
@@ -236,6 +239,8 @@ unique(f$ncodpers)
   #ind_nom_pens_ult1 	Pensions
   #ind_recibo_ult1 	  Direct Debit
   
+  
+
          
   
   

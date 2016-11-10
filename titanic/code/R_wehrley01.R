@@ -77,7 +77,7 @@ unique(df.train$Title)
 
 options(digits=2)
 
-require(Hmisc)
+  library(Hmisc)
 
 bystats(df.train$Age, df.train$Title,   fun=function(x)c(Mean=mean(x),Median=median(x)))
 

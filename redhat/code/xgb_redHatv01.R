@@ -144,17 +144,17 @@ param <- list(objective = "binary:logistic",
 
 ###uncomment this for CV run
 #
-#dmodel  <- xgb.DMatrix(train.sparse[model, ], label = Y[model])
-#dvalid  <- xgb.DMatrix(train.sparse[valid, ], label = Y[valid])
-#
-#set.seed(120)
-#m1 <- xgb.train(data = dmodel
-#                , param
-#                , nrounds = 500
-#                , watchlist = list(valid = dvalid, model = dmodel)
-#                , early.stop.round = 20
-#                , nthread=11
-#                , print_every_n = 10)
+dmodel  <- xgb.DMatrix(train.sparse[model, ], label = Y[model])
+dvalid  <- xgb.DMatrix(train.sparse[valid, ], label = Y[valid])
+
+set.seed(120)
+m1 <- xgb.train(data = dmodel
+                , param
+                , nrounds = 500
+                , watchlist = list(valid = dvalid, model = dmodel)
+                , early.stop.round = 20
+                , nthread=11
+                , print_every_n = 10)
 
 #[300]	valid-auc:0.979167	model-auc:0.990326
 
